@@ -369,12 +369,11 @@ int pullData(const void*pipePtr)
         cv.notify_all();
     }
     //config_.fixed_frame must == ""
-    for (int i = 0; i < tempData.data.size(); ++i)
-    {
-        data_->unpack(scanMsg->packets[i], *container_ptr, scanMsg->header.stamp);
-    }
-    // publish the accumulated cloud message
-    output_.publish(container_ptr->finishCloud());
+    //for (int i = 0; i < tempData.data.size(); ++i)
+    //{
+    //    data_->unpack(scanMsg->packets[i], *container_ptr, scanMsg->header.stamp);
+    //}
+    //output_.publish(container_ptr->finishCloud());
     return 0; ;
 }
 int ThreadProc1(DataPipe<LidarPackets>& pipe)
