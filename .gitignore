@@ -26,6 +26,7 @@ VelodyneLib/Release/*
 VelodyneUnpack/x64/*
 VelodyneUnpack/Debug/*
 VelodyneUnpack/Release/*
+3rdpart/linux-3rd/yaml-cpp/*
 x64/*
 out/*
 .vs/*
