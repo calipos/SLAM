@@ -21,9 +21,13 @@ COLORCVTTAGET = ./colorCvt.o
 #$(warning $(LIBs)) 
 
 VITUAL_LIDAR = ./vitual_lidar
+VelodyneUnpack = ./velodyne_unpack.a
 
-all : $(VITUAL_LIDAR) 
+all : $(VITUAL_LIDAR) $(VelodyneUnpack) 
 $(VITUAL_LIDAR):../VelodyneLib/virtualLidar_exe.cpp  
+	rm -f $@
+	$(CC) $(FLAG)   ../VelodyneLib/virtualLidar_exe.cpp   -o $@ 
+$(VelodyneUnpack): ../VelodyneUnpack/calibration.cpp ../VelodyneUnpack/rawdata.cpp
 	rm -f $@
 	$(CC) $(FLAG)   ../VelodyneLib/virtualLidar_exe.cpp   -o $@ 
 clean:
