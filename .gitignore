@@ -1,0 +1,84 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+x64/*
+Debug/*
+Release/*
+DataPipe/x64/*
+DataPipe/Debug/*
+DataPipe/Release/*
+ReadLidar/x64/*
+ReadLidar/Debug/*
+ReadLidar/Release/*
+ReadLidar/x64/*
+ReadLidar/Debug/*
+ReadLidar/Release/*
+SLAM/x64/*
+SLAM/Debug/*
+SLAM/Release/*
+VelodyneLib/x64/*
+VelodyneLib/Debug/*
+VelodyneLib/Release/*
+VelodyneUnpack/x64/*
+VelodyneUnpack/Debug/*
+VelodyneUnpack/Release/*
+x64/*
+out/*
+.vs/*
+Debug/*
+*.pcd
+*.ply
+*.txt
+*.off
+*.bmp
+*.png
+*.xyz
+*.pts
+*.def
+*.exp
+*.exports
+*.textgrid
+*.yml
+*.xml
+*.
+*.VC.db
+*.opendb
+*.log
+*.tlog
+*.lastbuildstate
+*.idb
+*.pdb
+*.ilk
+*.ipdb
+*.iobj
+*.rar
+*.suo
+
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
