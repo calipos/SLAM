@@ -1,32 +1,12 @@
-#include <string>
-#include <iostream>
+#include <fstream>
 #include <chrono>
 #include <thread>
-#include <sstream>
 #include <mutex>
 #include <condition_variable>
-#ifdef _MSC_VER
-#include <stdio.h>
-#include <winsock2.h>
-#pragma comment(lib,"ws2_32.lib")
-#else
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h> 
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/types.h> 
-#include <arpa/inet.h>
-#include <poll.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <sys/file.h>
-#endif // 0
-#include "../DataPipe/datapipe.h"
+#include "transform.h"
+//#include "../DataPipe/datapipe.h"
 #include "timer.h"
-#define PIx2 (6.28318530717958647692528676656)
-#define PI (3.1415926535897932384626433832795)
-#define	BUF_SIZE	1210 
+#define	BUF_SIZE__	(1210)
 #define UDPPORT 2368
 
 std::mutex mtx; // 全局相互排斥锁.
@@ -34,49 +14,6 @@ std::condition_variable cv; // 全局条件变量.
 bool ready = true; // 全局标志位.
 bool closeThread = false; // 全局标志位.
 
-struct param
-{
-    std::string frame_id;
-    std::string model;
-    double rpm;
-    int npackets;
-    bool timestamp_first_packet;
-    double cut_angle0; //in
-    double cut_angle;
-    double time_offset;
-    unsigned int confd;
-    sockaddr_in serveraddr;
-    int addr_length;
-    int last_azimuth_; 
-};
-struct velodyneUdpPacket
-{
-    std::vector<char> data;
-    velodyneUdpPacket() { data.resize(sizeof(double) + 1206); }
-};
-struct LidarPackets
-{
-    std::string frame_id;
-    int packetNumInside_;
-    double headerStamp;
-    std::vector<velodyneUdpPacket>data;//time+velodyneUdpPacket
-    LidarPackets()
-    {
-        packetNumInside_ = 0; 
-        data = std::vector<velodyneUdpPacket>(0);
-    }
-    int copyTo(LidarPackets& other) const
-    {
-        other.frame_id = frame_id;
-        other.packetNumInside_ = packetNumInside_;
-        other.headerStamp = headerStamp;
-        other.data.resize(data.size());
-        memcpy(&(other.data)[0], &data[0], data.size());
-        return 0;
-    }
-};
-struct ringPts
-{};
 int velodyneDriver(param& config_)
 {
     config_.last_azimuth_ = -1;
@@ -154,7 +91,7 @@ int velodyneDriver(param& config_)
 
     int confd;
  
-    char recvline[BUF_SIZE];
+    char recvline[BUF_SIZE__];
     struct sockaddr_in serveraddr;
 #ifdef _MSC_VER
     WSADATA wsd;
@@ -247,9 +184,9 @@ int getPacket(char* packet, param& config_)
 #endif
     int recv_length = 0;
 #ifdef _MSC_VER
-    recv_length = recvfrom(config_.confd, packet+sizeof(double), BUF_SIZE, 0, (sockaddr*)&(config_.serveraddr), &(config_.addr_length));
+    recv_length = recvfrom(config_.confd, packet+sizeof(double), BUF_SIZE__, 0, (sockaddr*)&(config_.serveraddr), &(config_.addr_length));
 #else
-    recv_length = recvfrom(config_.confd, packet + sizeof(double), BUF_SIZE, 0, (struct sockaddr*)&(config_.serveraddr), &(config_.addr_length));
+    recv_length = recvfrom(config_.confd, packet + sizeof(double), BUF_SIZE__, 0, (struct sockaddr*)&(config_.serveraddr), &(config_.addr_length));
 #endif
     if (recv_length<0)
     {
@@ -378,7 +315,7 @@ int pullData(const void*pipePtr)
 }
 int ThreadProc1(DataPipe<LidarPackets>& pipe)
 {
-
+#ifdef NDEBUG
     param config_;
     pipe.initSource(config_);
     pipe.setQueueAttr(config_);
@@ -386,6 +323,34 @@ int ThreadProc1(DataPipe<LidarPackets>& pipe)
     {
         pipe.getData(config_);
     }
+#else
+    std::vector<char> data(BUF_SIZE__ * 10000);
+    std::ifstream inF;
+    inF.open("D:/SLAM/package.dat", std::ifstream::binary);
+    inF.read(&data[0], BUF_SIZE__ * 10000);
+    inF.close();
+    int thisIdx = 0;
+    for (int i = 0; i<pipe.queueLength_; i++)
+    { 
+        pipe.queue[i].headerStamp = getCurrentTime();
+        pipe.queue[i].packetNumInside_ = 76;
+        pipe.queue[i].data.resize(76);
+        for (int  j = 0; j < 76; j++)
+        {
+            pipe.queue[i].data[j].data.resize(1206 + sizeof(double));
+            int pos = thisIdx * BUF_SIZE__;
+            if (pos + BUF_SIZE__ >= data.size())
+            {
+                pos = 0;
+            }
+            memcpy(&((&pipe.queue[i].data[j].data[0]+ sizeof(double))[0]),&data[pos], 1206 );
+            *(double*)(&pipe.queue[i].data[j].data[0]) = getCurrentTime();
+            thisIdx++;            
+        } 
+    }
+    pipe.totalSize = 5000;
+    pipe.cuurentPosFlag = 10;
+#endif
     return 0;
 }
 int main()
@@ -393,7 +358,27 @@ int main()
     DataPipe<LidarPackets> pipe(200);
     std::thread t1(ThreadProc1, std::ref(pipe));
     std::this_thread::sleep_for(std::chrono::seconds(2));
-    pullData(&pipe);
+
+    
+    //velodyne_rawdata::RawData rData;
+
+    velodyne_pointcloud::TransformNodeConfig config;        
+    config.organize_cloud = true;
+    config.min_range = 0.4;
+    config.max_range = 130;
+    velodyne_pointcloud::Transform tf(config, 0); 
+#ifdef NDEBUG
+    while (true)
+    {
+        pullData(&pipe);
+        tf.processScan(tempData);
+    }
+#else
+    for (int i = 0; i < pipe.queueLength_; i++)
+    {
+        tf.processScan(pipe.queue[i]);
+    }
+#endif
     for (;;)
     {
         {

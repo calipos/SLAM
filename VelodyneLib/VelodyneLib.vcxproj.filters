@@ -21,9 +21,48 @@
     <ClCompile Include="virtualLidar.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="calibration.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="rawdata.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="transform.h">
+      <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="transform.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="organized_cloudXYZIRT.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="pointcloudXYZIRT.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="timer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="DataStruct.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="calibration.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="datacontainerbase.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="rawdata.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="angels.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="organized_cloudXYZIRT.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="pointcloudXYZIRT.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

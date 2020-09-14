@@ -117,10 +117,14 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>$(SolutionDir)3rdpart\yaml-cpp\include;$(SolutionDir)$(ProjectName);D:\repo\eigen-git-mirror;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>$(SolutionDir)3rdpart\yaml-cpp\lib\yaml-cppd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -132,19 +136,36 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)3rdpart\yaml-cpp\include;$(SolutionDir)$(ProjectName);D:\repo\eigen-git-mirror;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>$(SolutionDir)3rdpart\yaml-cpp\lib\yaml-cpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="calibration.cpp" />
+    <ClCompile Include="organized_cloudXYZIRT.cpp" />
+    <ClCompile Include="pointcloudXYZIRT.cpp" />
+    <ClCompile Include="rawdata.cpp" />
+    <ClCompile Include="transform.cpp" />
+    <ClCompile Include="transform.h" />
     <ClCompile Include="virtualLidar.cpp" />
     <ClCompile Include="rececivePackets.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="calibration.h" />
+    <ClInclude Include="datacontainerbase.h" />
+    <ClInclude Include="DataStruct.h" />
+    <ClInclude Include="organized_cloudXYZIRT.h" />
+    <ClInclude Include="pointcloudXYZIRT.h" />
+    <ClInclude Include="rawdata.h" />
+    <ClInclude Include="angels.h" />
     <ClInclude Include="timer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -10,15 +10,15 @@
 #include <Windows.h>
 
 #pragma comment(lib, "ws2_32.lib")
-#define	BUF_SIZE	1210 
+#define	UDP_BUF_SIZE	1210 
 #define UDPPORT 2368
 int main_vitualLidar()
 //int main()
 {
-	std::vector<char> data(BUF_SIZE * 10000);
+	std::vector<char> data(UDP_BUF_SIZE * 10000);
 	std::ifstream inF;
 	inF.open("D:/SLAM/package.dat", std::ifstream::binary);
-	inF.read(&data[0], BUF_SIZE * 10000);
+	inF.read(&data[0], UDP_BUF_SIZE * 10000);
 	inF.close();
 
     WSAData wsd;       
@@ -54,7 +54,7 @@ int main_vitualLidar()
     for (int i = 0; ; i++) 
     {
         int thisIdx = i % 10000;
-        int pos = thisIdx * BUF_SIZE;  
+        int pos = thisIdx * UDP_BUF_SIZE;
         nRet = sendto(soSend, &data[pos], 1206, 0, (SOCKADDR*)&siLocal, sizeof(siLocal));
         if (nRet == SOCKET_ERROR) 
         {
