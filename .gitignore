@@ -28,6 +28,7 @@ VelodyneUnpack/Debug/*
 VelodyneUnpack/Release/*
 3rdpart/linux-3rd/yaml-cpp/*
 x64/*
+*.obj
 out/*
 .vs/*
 Debug/*

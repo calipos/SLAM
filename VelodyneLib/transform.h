@@ -1,7 +1,3 @@
-
-
-
-
 #ifndef VELODYNE_POINTCLOUD_TRANSFORM_H
 #define VELODYNE_POINTCLOUD_TRANSFORM_H
 
@@ -44,9 +40,7 @@ namespace velodyne_pointcloud
         void processScan(const LidarPackets& aPacket);
         std::shared_ptr<velodyne_rawdata::DataContainerBase> container_ptr;
     private:
-        void processScan(const velodyne_msgs::VelodyneScan::ConstPtr& scanMsg);
-
-        void reconfigure(velodyne_pointcloud::TransformNodeConfig& config, uint32_t level);
+        //void processScan(const velodyne_msgs::VelodyneScan::ConstPtr& scanMsg);
 
         std::shared_ptr<velodyne_rawdata::RawData> data_;
 

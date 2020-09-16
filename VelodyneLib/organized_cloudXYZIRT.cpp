@@ -11,14 +11,15 @@ OrganizedCloudXYZIRT::OrganizedCloudXYZIRT(
         max_range, min_range, target_frame, fixed_frame,
         num_lasers, 0, false, scans_per_block
         //, 6,
-        //"x", 1, sensor_msgs::PointField::FLOAT32,
-        //"y", 1, sensor_msgs::PointField::FLOAT32,
-        //"z", 1, sensor_msgs::PointField::FLOAT32,
-        //"intensity", 1, sensor_msgs::PointField::FLOAT32,
-        //"ring", 1, sensor_msgs::PointField::UINT16,
-        //"time", 1, sensor_msgs::PointField::FLOAT32),
+        //"x", 1, pcl::PCLPointField::PointFieldTypes::FLOAT32,
+        //"y", 1, pcl::PCLPointField::PointFieldTypes::FLOAT32,
+        //"z", 1, pcl::PCLPointField::PointFieldTypes::FLOAT32,
+        //"intensity", 1, pcl::PCLPointField::PointFieldTypes::FLOAT32,
+        //"ring", 1, pcl::PCLPointField::PointFieldTypes::UINT16,
+        //"time", 1, pcl::PCLPointField::PointFieldTypes::FLOAT32
+        //,
         //iter_x(cloud, "x"), iter_y(cloud, "y"), iter_z(cloud, "z"),
-        //iter_intensity(cloud, "intensity"), iter_ring(cloud, "ring"), iter_time(cloud, "time"
+        //iter_intensity(cloud, "intensity"), iter_ring(cloud, "ring"), iter_time(cloud, "time")
         )
   {
   }
@@ -36,12 +37,14 @@ OrganizedCloudXYZIRT::OrganizedCloudXYZIRT(
 
   void OrganizedCloudXYZIRT::setup(const velodyne_msgs::VelodyneScan::ConstPtr& scan_msg){
     DataContainerBase::setup(scan_msg);
+    std::cout<<"new frame"<<std::endl;
     //iter_x = sensor_msgs::PointCloud2Iterator<float>(cloud, "x");
     //iter_y = sensor_msgs::PointCloud2Iterator<float>(cloud, "y");
     //iter_z = sensor_msgs::PointCloud2Iterator<float>(cloud, "z");
     //iter_intensity = sensor_msgs::PointCloud2Iterator<float>(cloud, "intensity");
     //iter_ring = sensor_msgs::PointCloud2Iterator<uint16_t >(cloud, "ring");
     //iter_time = sensor_msgs::PointCloud2Iterator<float >(cloud, "time");
+    idx = 0;
   }
 
 
@@ -56,8 +59,19 @@ OrganizedCloudXYZIRT::OrganizedCloudXYZIRT(
     
     if (pointInRange(distance))
     {
-      transformPoint(x, y, z);
-      std::cout << x << ", " << y << ", " << z << ", " << ring << std::endl;
+      //transformPoint(x, y, z);
+      //std::cout << x << ", " << y << ", " << z << ", " << ring << std::endl;
+        if (cloud.totalCnt> idx)
+        {
+            cloud.xyzi->points[idx].x = x;
+            cloud.xyzi->points[idx].y = y;
+            cloud.xyzi->points[idx].z = z;
+            cloud.xyzi->points[idx].intensity = intensity;
+            cloud.ringIdx[idx] = ring;
+            cloud.time[idx] = time;
+            idx++;
+        }
+        
       //*(iter_x+ring) = x;
       //*(iter_y+ring) = y;
       //*(iter_z+ring) = z;

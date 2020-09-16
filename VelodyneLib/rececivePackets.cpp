@@ -3,17 +3,34 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <boost/asio.hpp>
+#ifdef NDEBUG
+#include <pcl/visualization/cloud_viewer.h>
+#endif
+#include "../DataPipe/datapipe.h"
 #include "transform.h"
-//#include "../DataPipe/datapipe.h"
 #include "timer.h"
-#define	BUF_SIZE__	(1210)
-#define UDPPORT 2368
+#define	BUF_SIZE__	(1210) 
 
 std::mutex mtx; // 全局相互排斥锁.
 std::condition_variable cv; // 全局条件变量.
 bool ready = true; // 全局标志位.
 bool closeThread = false; // 全局标志位.
 
+struct param
+{
+    std::string frame_id;
+    std::string model;
+    double rpm;
+    int npackets;
+    bool timestamp_first_packet;
+    double cut_angle0; //in
+    double cut_angle;
+    double time_offset;
+    int last_azimuth_;
+    boost::asio::io_service io_serviceA;
+    boost::asio::ip::udp::socket*udp_socket;
+};
 int velodyneDriver(param& config_)
 {
     config_.last_azimuth_ = -1;
@@ -89,110 +106,35 @@ int velodyneDriver(param& config_)
     // raw packet output topic
     //output_ =  node.advertise<velodyne_msgs::VelodyneScan>("velodyne_packets", 10);
 
-    int confd;
- 
-    char recvline[BUF_SIZE__];
-    struct sockaddr_in serveraddr;
-#ifdef _MSC_VER
-    WSADATA wsd;
-    int iRet = 0;
-    if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0)
-    {
-        iRet = WSAGetLastError();
-        printf("WSAStartup failed !\n");
-        return -1;
-    }
-#else
-    bzero(&serveraddr, sizeof(serveraddr));
-#endif
-    // 使用socket()，生成套接字文件描述符；
-    if ((confd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-    {
-        std::cout<< "socket() error" <<std::endl;
-        return -1;
-    } 
-    serveraddr.sin_family = AF_INET;
-#ifdef _MSC_VER
-    serveraddr.sin_addr.S_un.S_addr = (INADDR_ANY);
-#else
-    serveraddr.sin_addr.s_addr = (INADDR_ANY);
-#endif
-    serveraddr.sin_port = htons(UDPPORT);
-    int ret = bind(confd, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
-    if (ret < 0)
-    {
-        std::cout << "bind() error" << std::endl;
-#ifdef _MSC_VER
-        closesocket(confd);
-        WSACleanup();
-#else
-        close(confd);
-#endif
-        return -1;
-    } 
-    config_.confd = confd;
-    config_.serveraddr = serveraddr;
+    
+    config_.udp_socket = new boost::asio::ip::udp::socket(config_.io_serviceA); 
+    boost::asio::ip::udp::endpoint local_add(boost::asio::ip::udp::v4(), 2368);
+    config_.udp_socket->open(local_add.protocol());
+    config_.udp_socket->bind(local_add);
+
     return 0;
 }
 
 int getPacket(char* packet, param& config_)
 {
     double time1 = getCurrentTime();
-
-#ifndef _MSC_VER
-    // Unfortunately, the Linux kernel recvfrom() implementation
-// uses a non-interruptible sleep() when waiting for data,
-// which would cause this method to hang if the device is not
-// providing data.  We poll() the device first to make sure
-// the recvfrom() will not block.
-// Note, however, that there is a known Linux kernel bug:
-//   Under Linux, select() may report a socket file descriptor
-//   as "ready for reading", while nevertheless a subsequent
-//   read blocks.  This could for example happen when data has
-//   arrived but upon examination has wrong checksum and is
-//   discarded.  There may be other circumstances in which a
-//   file descriptor is spuriously reported as ready.  Thus it
-//   may be safer to use O_NONBLOCK on sockets that should not
-//   block.
-// poll() until input available
-    struct pollfd fds[1];
-    fds[0].fd = config_.confd;
-    fds[0].events = POLLIN;
-    static const int POLL_TIMEOUT = 1000; // one second (in msec)
-    do
-    {
-        int retval = poll(fds, 1, POLL_TIMEOUT);
-        if (retval < 0)             // poll() error?
-        {
-            if (errno != EINTR)
-                std::cout << "poll() error: " << strerror(errno) << std::endl;;
-            return -1;
-        }
-        if (retval == 0)            // poll() timeout?
-        {
-            std::cout << "Velodyne poll() timeout" << std::endl;;
-            return -1;
-        }
-        if ((fds[0].revents & POLLERR)
-            || (fds[0].revents & POLLHUP)
-            || (fds[0].revents & POLLNVAL)) // device error?
-        {
-            std::cout << "poll() reports Velodyne error" << std::endl;;
-            return -1;
-}
-    } while ((fds[0].revents & POLLIN) == 0);
-#endif
     int recv_length = 0;
-#ifdef _MSC_VER
-    recv_length = recvfrom(config_.confd, packet+sizeof(double), BUF_SIZE__, 0, (sockaddr*)&(config_.serveraddr), &(config_.addr_length));
-#else
-    recv_length = recvfrom(config_.confd, packet + sizeof(double), BUF_SIZE__, 0, (struct sockaddr*)&(config_.serveraddr), &(config_.addr_length));
-#endif
+    {
+        boost::asio::ip::udp::endpoint  sendpoint;
+        try
+        {
+            recv_length = config_.udp_socket->receive_from(boost::asio::buffer(packet + sizeof(double), 1206 ), sendpoint);
+        }
+        catch (const std::exception&e)
+        {
+            std::cout<<e.what()<<std::endl;
+        }
+    }
+    //std::cout << "recv_length = " << recv_length << std::endl;
     if (recv_length<0)
     {
         return -1;
     }
-    std::cout << "recv_length = " << recv_length << std::endl;
     double time2 = getCurrentTime();
     *(double*)packet = (time2 + time1) *.5 + config_.time_offset;
     return 0;
@@ -255,10 +197,12 @@ int DataPipe<LidarPackets>::getData<param>(param& config_)
             while (true)
             {
                 std::unique_lock <std::mutex> lck(mtx);
-                ready = false;
-                int rc = getPacket(&tmp_packet.data[0], config_);
-                if (rc == 0) break;       // got a full packet?
-                if (rc < 0) return -1; // end of file reached?
+                if (ready)
+                {
+                    int rc = getPacket(&tmp_packet.data[0], config_);
+                    if (rc == 0) break;       // got a full packet?
+                    if (rc < 0) return -1; // end of file reached?
+                }
             }
         }
     }
@@ -317,7 +261,7 @@ int ThreadProc1(DataPipe<LidarPackets>& pipe)
 {
 #ifdef NDEBUG
     param config_;
-    pipe.initSource(config_);
+    std::cout << pipe.initSource(config_) << std::endl;;
     pipe.setQueueAttr(config_);
     while (true)
     {
@@ -357,27 +301,50 @@ int main()
 {
     DataPipe<LidarPackets> pipe(200);
     std::thread t1(ThreadProc1, std::ref(pipe));
-    std::this_thread::sleep_for(std::chrono::seconds(2));
-
-    
-    //velodyne_rawdata::RawData rData;
-
+    std::this_thread::sleep_for(std::chrono::seconds(2));    
     velodyne_pointcloud::TransformNodeConfig config;        
     config.organize_cloud = true;
     config.min_range = 0.4;
     config.max_range = 130;
     velodyne_pointcloud::Transform tf(config, 0); 
 #ifdef NDEBUG
-    while (true)
-    {
-        pullData(&pipe);
-        tf.processScan(tempData);
-    }
-#else
+    pcl::visualization::CloudViewer viewer("Cluster viewer");
+    pcl::PointCloud<pcl::PointXYZI>::Ptr showPc(new pcl::PointCloud<pcl::PointXYZI>);
     for (int i = 0; i < pipe.queueLength_; i++)
     {
-        tf.processScan(pipe.queue[i]);
+        //continue;
+        if (pullData(&pipe) < 0)continue;
+        tf.processScan(tempData);
+
+        std::cout << tf.container_ptr->idx << std::endl;
+        //tf.processScan(pipe.queue[i]);
+        pcl::copyPointCloud(*tf.container_ptr->cloud.xyzi, *showPc);
+        showPc->height = 1;
+        showPc->width = tf.container_ptr->idx;
+        showPc->points.resize(tf.container_ptr->idx);
+        viewer.showCloud(showPc);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        if (i == pipe.queueLength_-1)
+        {
+            i = -1;
+        }
     }
+#else
+    //pcl::visualization::CloudViewer viewer("pcd viewer");    
+    for (int i = 0; i < pipe.queueLength_; i++)
+    {
+        if (pullData(&pipe) < 0)continue;
+        tf.processScan(tempData);
+        tf.processScan(pipe.queue[i]);
+        std::cout << tf.container_ptr->idx << std::endl;
+        if (i == pipe.queueLength_ - 1)
+        {
+            i = -1;
+        }
+        //viewer.showCloud(tf.container_ptr->cloud.xyzi);
+    }
+
+
 #endif
     for (;;)
     {

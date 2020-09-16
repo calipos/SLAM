@@ -15,52 +15,40 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="rececivePackets.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="calibration.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="rawdata.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="transform.h">
+    <ClInclude Include="ScanRegistration.h">
       <Filter>头文件</Filter>
-    </ClCompile>
-    <ClCompile Include="transform.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="organized_cloudXYZIRT.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="pointcloudXYZIRT.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
+    </ClInclude>
+    <ClInclude Include="common.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="BasicScanRegistration.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Angle.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CircularBuffer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="time_utils.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector3.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="math_utils.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="timer.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="DataStruct.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="calibration.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="datacontainerbase.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="rawdata.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="angels.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="organized_cloudXYZIRT.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="pointcloudXYZIRT.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
+    <ClCompile Include="源.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="BasicScanRegistration.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ScanRegistration.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

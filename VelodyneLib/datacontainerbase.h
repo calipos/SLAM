@@ -1,36 +1,6 @@
 #ifndef VELODYNE_POINTCLOUD_DATACONTAINERBASE_H
 #define VELODYNE_POINTCLOUD_DATACONTAINERBASE_H
-// Copyright (C) 2012, 2019 Austin Robot Technology, Jack O'Quin, Joshua Whitley, Sebastian P¨¹tz
-// All rights reserved.
-//
-// Software License Agreement (BSD License 2.0)
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions
-// are met:
-//
-//  * Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-//  * Redistributions in binary form must reproduce the above
-//    copyright notice, this list of conditions and the following
-//    disclaimer in the documentation and/or other materials provided
-//    with the distribution.
-//  * Neither the name of {copyright_holder} nor the names of its
-//    contributors may be used to endorse or promote products derived
-//    from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-// COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
+
 
 //#include <tf2_ros/transform_listener.h>
 //#include <geometry_msgs/TransformStamped.h>
@@ -42,10 +12,89 @@
 #include <string>
 #include <algorithm>
 #include <cstdarg>
+#include <pcl/common/common.h>
+#include <pcl/point_types.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/search/search.h>
+#include <pcl/search/kdtree.h>
 #include "DataStruct.h"
-
+#ifdef NDEBUG
+#pragma comment(lib,"shlwapi.lib")
+#pragma comment(lib,"pcl_common.lib")
+#pragma comment(lib,"pcl_filters.lib")
+#pragma comment(lib,"pcl_features.lib")
+#pragma comment(lib,"pcl_sample_consensus.lib")
+#pragma comment(lib,"pcl_io.lib")
+#pragma comment(lib,"pcl_io_ply.lib")
+#pragma comment(lib,"pcl_kdtree.lib")
+#pragma comment(lib,"pcl_registration.lib")
+#pragma comment(lib,"pcl_search.lib")
+#pragma comment(lib,"pcl_segmentation.lib")
+#pragma comment(lib,"pcl_surface.lib")
+#pragma comment(lib,"pcl_visualization.lib")
+#pragma comment(lib,"flann_cpp_s.lib")
+#endif
+#ifdef _DEBUG
+#pragma comment(lib,"shlwapi.lib")
+#pragma comment(lib,"pcl_common.lib")
+#pragma comment(lib,"pcl_filters.lib")
+#pragma comment(lib,"pcl_features.lib")
+#pragma comment(lib,"pcl_sample_consensus.lib")
+#pragma comment(lib,"pcl_io.lib")
+#pragma comment(lib,"pcl_io_ply.lib")
+#pragma comment(lib,"pcl_kdtree.lib")
+#pragma comment(lib,"pcl_registration.lib")
+#pragma comment(lib,"pcl_search.lib")
+#pragma comment(lib,"pcl_segmentation.lib")
+#pragma comment(lib,"pcl_surface.lib")
+#pragma comment(lib,"pcl_surface.lib")
+#pragma comment(lib,"flann_cpp_s.lib")
+#endif
 namespace velodyne_rawdata
 {
+    struct header_
+    {
+        std::string frame_id;
+        double stamp;
+    };
+    struct scanPoints
+    {
+        header_ header;
+        int width;
+        int height;
+        uint8_t is_dense;
+        pcl::PointCloud<pcl::PointXYZI>::Ptr xyzi;
+        std::vector<uint16_t>ringIdx;
+        std::vector<float>time;
+        std::vector<int>fields;
+        int point_step;
+        int row_step;
+        int totalCnt;
+        scanPoints()
+        {
+            xyzi = NULL;
+            ringIdx.clear();
+        }
+        void dataResize(const int& cnt)
+        {
+            if (xyzi == NULL)
+            {
+                totalCnt = cnt;
+                pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>);
+                temp->points.resize(cnt);
+                xyzi = temp;
+                ringIdx.resize(cnt);
+                time.resize(cnt);
+            }
+            else
+            {
+                //xyzi->clear();
+                //ringIdx.clear();
+                //time.clear();
+            }
+        }
+    };
+            
     class DataContainerBase
     {
     public:
@@ -58,6 +107,7 @@ namespace velodyne_rawdata
             int offset = 1;
             cloud.point_step = offset;
             cloud.row_step = init_width * cloud.point_step;
+            
         }
 
         struct Config
@@ -93,10 +143,8 @@ namespace velodyne_rawdata
         virtual void setup(const velodyne_msgs::VelodyneScan::ConstPtr& scan_msg)
         {
             sensor_frame = scan_msg->frame_id;
-            manage_tf_buffer();
-
             cloud.header.stamp = scan_msg->headerStamp;
-            cloud.data.resize(scan_msg->data.size() * config_.scans_per_packet * cloud.point_step);
+            cloud.dataResize(scan_msg->data.size() * config_.scans_per_packet * cloud.point_step);
             cloud.width = config_.init_width;
             cloud.height = config_.init_height;
             cloud.is_dense = static_cast<uint8_t>(config_.is_dense);
@@ -109,9 +157,9 @@ namespace velodyne_rawdata
             const float intensity, const float time) {};
         virtual void newLine() {};
 
-        const ringPts& finishCloud()
+        const scanPoints& finishCloud()
         {
-            cloud.data.resize(cloud.point_step * cloud.width * cloud.height);
+            cloud.dataResize(cloud.point_step * cloud.width * cloud.height);
 
             if (!config_.target_frame.empty())
             {
@@ -131,9 +179,7 @@ namespace velodyne_rawdata
             return cloud;
         }
 
-        void manage_tf_buffer()
-        {
-        }
+ 
 
         void configure(const double max_range, const double min_range, const std::string fixed_frame,
             const std::string target_frame)
@@ -143,12 +189,11 @@ namespace velodyne_rawdata
             config_.fixed_frame = fixed_frame;
             config_.target_frame = target_frame;
 
-            manage_tf_buffer();
         }
-
-        ringPts cloud;
-
-
+        
+        //pcl::PCLPointCloud2 cloud;
+        scanPoints cloud;
+        int idx;
 
         inline void transformPoint(float& x, float& y, float& z)
         {

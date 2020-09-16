@@ -193,7 +193,7 @@ namespace velodyne_rawdata
     }
 
     /** Set up for on-line operation. */
-    std::optional<velodyne_pointcloud::Calibration> RawData::setup()
+     int RawData::setup( )
     {
         config_.model = "VLP16";
         buildTimings();
@@ -203,7 +203,7 @@ namespace velodyne_rawdata
         if (!calibration_.initialized) {
             ROS_ERROR_STREAM("Unable to open calibration file: " <<
                 config_.calibrationFile);
-            return std::optional<velodyne_pointcloud::Calibration>();
+            return -1;
         }
 
         ROS_INFO_STREAM("Number of lasers: " << calibration_.num_lasers << ".");
@@ -214,7 +214,7 @@ namespace velodyne_rawdata
             cos_rot_table_[rot_index] = cosf(rotation);
             sin_rot_table_[rot_index] = sinf(rotation);
         }
-        return calibration_;
+        return 0;
     }
 
     /** Set up for offline operation */
@@ -439,7 +439,7 @@ namespace velodyne_rawdata
         float time_diff_start_to_this_packet = toSec(*(double*)&pkt.data[0] - scan_start_time);
 
         const raw_packet_t* raw = (const raw_packet_t*)(&pkt.data[0]+sizeof(double));
-        std::cout<<sizeof(raw_packet_t)<<std::endl;
+        //std::cout<<sizeof(raw_packet_t)<<std::endl;
         for (int block = 0; block < BLOCKS_PER_PACKET; block++) 
         {
 
@@ -605,7 +605,7 @@ namespace velodyne_rawdata
                         data.addPoint(x_coord, y_coord, z_coord, corrections.laser_ring, azimuth_corrected, distance, intensity, time);
                     }
                 }
-                data.newLine();
+                //data.newLine();
             }
         }
     }

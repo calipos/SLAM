@@ -12,8 +12,8 @@
 #pragma comment(lib, "ws2_32.lib")
 #define	UDP_BUF_SIZE	1210 
 #define UDPPORT 2368
-int main_vitualLidar()
-//int main()
+//int main_vitualLidar()
+int main()
 {
 	std::vector<char> data(UDP_BUF_SIZE * 10000);
 	std::ifstream inF;

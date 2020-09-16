@@ -45,8 +45,8 @@
 #include <errno.h>
 #include <stdint.h>
 #include <string>
- //#include <boost/format.hpp>
-#include <optional>
+//#include <boost/format.hpp>
+//#include <optional>
 #include <math.h>
 #include <vector>
 
@@ -152,7 +152,7 @@ namespace velodyne_rawdata
          */
          //boost::optional<velodyne_pointcloud::Calibration> setup(ros::NodeHandle private_nh);
 
-        std::optional<velodyne_pointcloud::Calibration> setup();
+        int setup();
 
 
         /** \brief Set up for data processing offline.
@@ -175,6 +175,10 @@ namespace velodyne_rawdata
 
         int scansPerPacket() const;
 
+        /**
+         * Calibration file
+         */
+        velodyne_pointcloud::Calibration calibration_;
     private:
         /** configuration parameters */
         typedef struct
@@ -192,10 +196,6 @@ namespace velodyne_rawdata
         Config;
         Config config_;
 
-        /**
-         * Calibration file
-         */
-        velodyne_pointcloud::Calibration calibration_;
         float sin_rot_table_[ROTATION_MAX_UNITS];
         float cos_rot_table_[ROTATION_MAX_UNITS];
 
