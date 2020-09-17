@@ -19,6 +19,7 @@
 #include <pcl/search/kdtree.h>
 #include "../logger/logger.h"
 #include "DataStruct.h"
+#ifdef _MSC_VER
 #ifdef NDEBUG
 #pragma comment(lib,"shlwapi.lib")
 #pragma comment(lib,"pcl_common.lib")
@@ -50,6 +51,7 @@
 #pragma comment(lib,"pcl_surfaced.lib")
 #pragma comment(lib,"pcl_visualizationd.lib")
 #pragma comment(lib,"flann_cpp_s-gd.lib")
+#endif
 #endif
 namespace velodyne_rawdata
 {

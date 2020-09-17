@@ -45,13 +45,6 @@ namespace loam
 
   private:
 
-    /** \brief Parse node parameter.
-    *
-    * @param nh the ROS node handle
-    * @return true, if all specified parameters are valid, false if at least one specified parameter is invalid
-    */
-    bool parseParams(/*const ros::NodeHandle& nh,*/ RegistrationParams& config_out);
-
   private:
     //ros::Subscriber _subImu;                    ///< IMU message subscriber
     //ros::Publisher _pubLaserCloud;              ///< full resolution cloud message publisher

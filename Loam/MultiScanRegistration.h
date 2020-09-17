@@ -73,7 +73,7 @@ public:
   MultiScanRegistration(const MultiScanMapper& scanMapper = MultiScanMapper());
 
 
-  bool setup(RegistrationParams& config);
+  bool setup(RegistrationParams& config_in);
 
   /** \brief Handler method for input cloud messages.
    *

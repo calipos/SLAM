@@ -45,21 +45,22 @@ MultiScanRegistration::MultiScanRegistration(const MultiScanMapper& scanMapper)
 
 
 
-bool MultiScanRegistration::setup(RegistrationParams&config)
+bool MultiScanRegistration::setup(RegistrationParams&config_in)
 {
+    CHECK(true == setupROS(config_in));
   configure(config);
   return true;
 }
 
-bool MultiScanRegistration::setupROS(/*ros::NodeHandle& node, ros::NodeHandle& privateNode, */RegistrationParams& config_out)
+bool MultiScanRegistration::setupROS(RegistrationParams& config_out)
 {
-  if (!ScanRegistration::setupROS(node, privateNode, config_out))
+  if (!ScanRegistration::setupROS( config_out))
     return false;
 
   // fetch scan mapping params
-  std::string lidarName;
+  std::string lidarName= config_out.lidarName;
 
-  if (privateNode.getParam("lidar", lidarName)) {
+  if (lidarName!="") {
     if (lidarName == "VLP-16") {
       _scanMapper = MultiScanMapper::Velodyne_VLP_16();
     } else if (lidarName == "HDL-32") {
@@ -67,14 +68,14 @@ bool MultiScanRegistration::setupROS(/*ros::NodeHandle& node, ros::NodeHandle& p
     } else if (lidarName == "HDL-64E") {
       _scanMapper = MultiScanMapper::Velodyne_HDL_64E();
     } else {
-      ROS_ERROR("Invalid lidar parameter: %s (only \"VLP-16\", \"HDL-32\" and \"HDL-64E\" are supported)", lidarName.c_str());
+        LOG(ERROR) << "Invalid lidar parameter: %s (only \"VLP-16\", \"HDL-32\" and \"HDL-64E\" are supported)", lidarName.c_str();
       return false;
     }
 
-    ROS_INFO("Set  %s  scan mapper.", lidarName.c_str());
-    if (!privateNode.hasParam("scanPeriod")) {
+    LOG(INFO) << "Set  %s  scan mapper.", lidarName.c_str();
+    if (1/*!privateNode.hasParam("scanPeriod")*/) {
       config_out.scanPeriod = 0.1;
-      ROS_INFO("Set scanPeriod: %f", config_out.scanPeriod);
+      LOG(INFO)<<"Set scanPeriod: %f", config_out.scanPeriod;
     }
   } else {
     float vAngleMin, vAngleMax;
@@ -84,21 +85,21 @@ bool MultiScanRegistration::setupROS(/*ros::NodeHandle& node, ros::NodeHandle& p
         privateNode.getParam("maxVerticalAngle", vAngleMax) &&
         privateNode.getParam("nScanRings", nScanRings)) {
       if (vAngleMin >= vAngleMax) {
-        ROS_ERROR("Invalid vertical range (min >= max)");
+          LOG(ERROR) << "Invalid vertical range (min >= max)";
         return false;
       } else if (nScanRings < 2) {
-        ROS_ERROR("Invalid number of scan rings (n < 2)");
+          LOG(ERROR) << "Invalid number of scan rings (n < 2)";
         return false;
       }
 
       _scanMapper.set(vAngleMin, vAngleMax, nScanRings);
-      ROS_INFO("Set linear scan mapper from %g to %g degrees with %d scan rings.", vAngleMin, vAngleMax, nScanRings);
+      LOG(INFO) << "Set linear scan mapper from %g to %g degrees with %d scan rings.", vAngleMin, vAngleMax, nScanRings;
     }
   }
 
   // subscribe to input cloud topic
-  _subLaserCloud = node.subscribe<sensor_msgs::PointCloud2>
-      ("/multi_scan_points", 2, &MultiScanRegistration::handleCloudMessage, this);
+  //_subLaserCloud = node.subscribe<sensor_msgs::PointCloud2>
+  //    ("/multi_scan_points", 2, &MultiScanRegistration::handleCloudMessage, this);
 
   return true;
 }

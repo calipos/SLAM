@@ -114,7 +114,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;BOOST_USE_WINDOWS_H;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;BOOST_USE_WINDOWS_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <AdditionalIncludeDirectories>$(SolutionDir)3rdpart\yaml-cpp\include;$(SolutionDir)$(ProjectName);D:\ucl360\libraries2019\boost164;D:\Program Files\PCL 1.11.1\3rdParty\Eigen\eigen3;D:\Program Files\PCL 1.11.1\3rdParty\FLANN\include;D:\repo\pcl\vs2019-static-build\install-debug\include\pcl-1.11;D:\repo\VTK-8.2.0\vs2019-static-build\install-debug\include\vtk-8.2;D:\ucl360\libraries2019\glog_debug\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -134,7 +134,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;BOOST_USE_WINDOWS_H;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;BOOST_USE_WINDOWS_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <LanguageStandard>Default</LanguageStandard>

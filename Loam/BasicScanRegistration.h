@@ -3,13 +3,58 @@
 #include <utility>
 #include <vector>
 #include <pcl/point_cloud.h>
+#include "common.h"
 #include "Angle.h"
 #include "Vector3.h"
 #include "CircularBuffer.h"
 #include "time_utils.h"
-
+#include "math_utils.h"
+#include "../logger/logger.h"
+#ifdef _MSC_VER
+#ifdef NDEBUG
+#pragma comment(lib,"shlwapi.lib")
+#pragma comment(lib,"pcl_common.lib")
+#pragma comment(lib,"pcl_filters.lib")
+#pragma comment(lib,"pcl_features.lib")
+#pragma comment(lib,"pcl_sample_consensus.lib")
+#pragma comment(lib,"pcl_io.lib")
+#pragma comment(lib,"pcl_io_ply.lib")
+#pragma comment(lib,"pcl_kdtree.lib")
+#pragma comment(lib,"pcl_registration.lib")
+#pragma comment(lib,"pcl_search.lib")
+#pragma comment(lib,"pcl_segmentation.lib")
+#pragma comment(lib,"pcl_surface.lib")
+#pragma comment(lib,"pcl_visualization.lib")
+#pragma comment(lib,"flann_cpp_s.lib")
+#endif
+#ifdef _DEBUG
+#pragma comment(lib,"shlwapi.lib")
+#pragma comment(lib,"pcl_commond.lib")
+#pragma comment(lib,"pcl_filtersd.lib")
+#pragma comment(lib,"pcl_featuresd.lib")
+#pragma comment(lib,"pcl_sample_consensusd.lib")
+#pragma comment(lib,"pcl_iod.lib")
+#pragma comment(lib,"pcl_io_plyd.lib")
+#pragma comment(lib,"pcl_kdtreed.lib")
+#pragma comment(lib,"pcl_registrationd.lib")
+#pragma comment(lib,"pcl_searchd.lib")
+#pragma comment(lib,"pcl_segmentationd.lib")
+#pragma comment(lib,"pcl_surfaced.lib")
+#pragma comment(lib,"pcl_visualizationd.lib")
+#pragma comment(lib,"flann_cpp_s.lib")
+#endif
+#endif
 namespace loam
 {
+    namespace sensor_msgs
+    {
+        struct Imu
+        {
+            typedef  void* ConstPtr;
+        };
+    }
+
+
   /** \brief A pair describing the start end end index of a range. */
   typedef std::pair<size_t, size_t> IndexRange;
   /** Point label options. */
@@ -34,6 +79,7 @@ namespace loam
       const int& maxSurfaceFlat_ = 4,
       const float& lessFlatFilterSize_ = 0.2,
       const float& surfaceCurvatureThreshold_ = 0.1);
+    std::string lidarName;
 
     /** The time per scan. */
     float scanPeriod;
@@ -219,9 +265,9 @@ namespace loam
     void interpolateIMUStateFor(const float& relTime, IMUState& outputState);
 
     void updateIMUTransform();
-
-  private:
     RegistrationParams _config;  ///< registration parameter
+  private:
+
 
     pcl::PointCloud<pcl::PointXYZI> _laserCloud;   ///< full resolution input cloud
     std::vector<IndexRange> _scanIndices;          ///< start and end indices of the individual scans withing the full resolution cloud
