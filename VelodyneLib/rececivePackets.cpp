@@ -1,15 +1,20 @@
 #include <fstream>
+#include <functional>
 #include <chrono>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
 #include <boost/asio.hpp>
-#ifdef NDEBUG
-#include <pcl/visualization/cloud_viewer.h>
-#endif
+#include "../logger/logger.h"
 #include "../DataPipe/datapipe.h"
 #include "transform.h"
 #include "timer.h"
+#define USE_VITUAL_UDP 1
+#define PCL_SHOW 1
+#if  PCL_SHOW>0
+#include <pcl/visualization/cloud_viewer.h>
+#endif //   PCL_SHOW>0
+
 #define	BUF_SIZE__	(1210) 
 
 std::mutex mtx; // »´æ÷œ‡ª•≈≈≥‚À¯.
@@ -76,32 +81,32 @@ int velodyneDriver(param& config_)
     }
     std::string deviceName(std::string("Velodyne ") + model_full_name);
     config_.rpm = 600.0;
-    std::cout << deviceName << " rotating at " << config_.rpm << " RPM" << std::endl;
+    LOG(INFO) << deviceName << " rotating at " << config_.rpm << " RPM";
     double frequency = (config_.rpm / 60.0);   
     config_.npackets = (int)ceil(packet_rate / frequency); 
-    std::cout << config_.npackets << " packets per scan" << std::endl;
+    LOG(INFO) << config_.npackets << " packets per scan";
     config_.timestamp_first_packet = false;
     if (config_.timestamp_first_packet)
-        std::cout << "Setting velodyne scan start time to timestamp of first packet" << std::endl; 
+        LOG(INFO) << "Setting velodyne scan start time to timestamp of first packet";
     config_.cut_angle0 = -0.01;
     double cut_angle = -0.01;
     if (cut_angle < 0.0)
     {
-        std::cout << "Cut at specific angle feature deactivated." << std::endl;;
+        LOG(INFO) << "Cut at specific angle feature deactivated.";
     }
     else if (cut_angle < PIx2)
     {
-        std::cout << "Cut at specific angle feature activated. Cutting velodyne points always at " << cut_angle << " rad." << std::endl;;
+        LOG(INFO) << "Cut at specific angle feature activated. Cutting velodyne points always at " << cut_angle << " rad.";
     }
     else
     {
-        std::cout << "cut_angle parameter is out of range. Allowed range is between 0.0 and 2*PI or negative values to deactivate this feature." << std::endl;
+        LOG(INFO) << "cut_angle parameter is out of range. Allowed range is between 0.0 and 2*PI or negative values to deactivate this feature.";
         cut_angle = -0.01;
     }
         
     config_.cut_angle = int((cut_angle * 360 / PIx2) * 100);
     const double diag_freq = packet_rate / config_.npackets;
-    std::cout << "expected frequency: "<< diag_freq <<"  (Hz)" << std::endl;;
+    LOG(INFO) << "expected frequency: " << diag_freq << "  (Hz)";
 
     // raw packet output topic
     //output_ =  node.advertise<velodyne_msgs::VelodyneScan>("velodyne_packets", 10);
@@ -147,22 +152,18 @@ int DataPipe<LidarPackets>::initSource<param>(param& config_)
     int ret = velodyneDriver(config_);
     return ret;
 }
-template<>
-template<>
-int DataPipe<LidarPackets>::getData<param>(param& config_)
-{    
-    auto& udpPackets = pushData2();
-    udpPackets.data.clear();
-    udpPackets.data.reserve(config_.npackets);
+int lidarGetUdp(param& config_, LidarPackets* mem)
+{
+    LidarPackets& udpPackets = *(LidarPackets*)mem;
     if (config_.cut_angle >= 0) //Cut at specific angle feature enabled
     {
         while (true)
         {
             velodyneUdpPacket tmp_packet;
             while (true)
-            {                
+            {
                 std::unique_lock <std::mutex> lck(mtx);
-                ready = false;                
+                ready = false;
                 int rc = getPacket(&tmp_packet.data[0], config_);
                 if (rc == 0) break;       // got a full packet?
                 if (rc < 0) return -1; // end of file reached?
@@ -172,7 +173,7 @@ int DataPipe<LidarPackets>::getData<param>(param& config_)
             // Extract base rotation of first block in packet
             std::size_t azimuth_data_pos = 100 * 0 + 2;
             int azimuth = *((uint16_t*)(&tmp_packet.data[azimuth_data_pos]));
-
+            std::cout << azimuth << std::endl;
             //if first packet in scan, there is no "valid" last_azimuth_
             if (config_.last_azimuth_ == -1) {
                 config_.last_azimuth_ = azimuth;
@@ -193,7 +194,7 @@ int DataPipe<LidarPackets>::getData<param>(param& config_)
         udpPackets.data.resize(config_.npackets);
         for (int i = 0; i < config_.npackets; ++i)
         {
-            velodyneUdpPacket&tmp_packet= udpPackets.data[i];
+            velodyneUdpPacket& tmp_packet = udpPackets.data[i];
             while (true)
             {
                 std::unique_lock <std::mutex> lck(mtx);
@@ -206,22 +207,21 @@ int DataPipe<LidarPackets>::getData<param>(param& config_)
             }
         }
     }
-    if (config_.timestamp_first_packet) 
+    if (config_.timestamp_first_packet)
     {
         udpPackets.headerStamp = *(double*)(&udpPackets.data[0]);
     }
-    else 
+    else
     {
         udpPackets.headerStamp = *(double*)(&udpPackets.data[udpPackets.data.size() - 1]);
     }
-    udpPackets.frame_id = config_.frame_id;
+    return 0;
 }
+ 
 template<>
 template<>
 int DataPipe<LidarPackets>::setQueueAttr<param>(param& config_)
 {
-    cuurentPosFlag = 0;
-    totalSize = -1; 
     for (int i = 0; i < queue.size(); i++)
     {
         queue[i].data.reserve(config_.npackets);
@@ -230,42 +230,21 @@ int DataPipe<LidarPackets>::setQueueAttr<param>(param& config_)
 }
 
 LidarPackets tempData;
-int pullData(const void*pipePtr) 
+int pullData(void*pipePtr) 
 {
-    const DataPipe<LidarPackets>& pipe = *(const DataPipe<LidarPackets>*)pipePtr;
-    {
-        std::unique_lock <std::mutex> lck(mtx);
-        ready = false;
-    }
-    if (pipe.totalSize<0)
-    {
-        return -1;
-    }
-    int lastIdx = pipe.cuurentPosFlag - 1;
-    if (lastIdx < 0)lastIdx = pipe.queue.size() - 1;
-    pipe.queue[lastIdx].copyTo(tempData);
-    {
-        std::unique_lock <std::mutex> lck(mtx);
-        ready = true;
-        cv.notify_all();
-    }
-    //config_.fixed_frame must == ""
-    //for (int i = 0; i < tempData.data.size(); ++i)
-    //{
-    //    data_->unpack(scanMsg->packets[i], *container_ptr, scanMsg->header.stamp);
-    //}
-    //output_.publish(container_ptr->finishCloud());
+    DataPipe<LidarPackets>& pipe = *(DataPipe<LidarPackets>*)pipePtr;    
+    pipe.pop(&tempData);
     return 0; ;
 }
 int ThreadProc1(DataPipe<LidarPackets>& pipe)
 {
-#ifdef NDEBUG
+#ifdef USE_VITUAL_UDP>0
     param config_;
-    std::cout << pipe.initSource(config_) << std::endl;;
+    CHECK(0==pipe.initSource(config_));
     pipe.setQueueAttr(config_);
     while (true)
     {
-        pipe.getData(config_);
+        pipe.pushData<int(param& config_,LidarPackets* packet), param>(lidarGetUdp, config_);        
     }
 #else
     std::vector<char> data(BUF_SIZE__ * 10000);
@@ -299,53 +278,43 @@ int ThreadProc1(DataPipe<LidarPackets>& pipe)
 }
 int main()
 {
-    DataPipe<LidarPackets> pipe(200);
+    DataPipe<LidarPackets> pipe(100);
     std::thread t1(ThreadProc1, std::ref(pipe));
     std::this_thread::sleep_for(std::chrono::seconds(2));    
     velodyne_pointcloud::TransformNodeConfig config;        
     config.organize_cloud = true;
     config.min_range = 0.4;
     config.max_range = 130;
-    velodyne_pointcloud::Transform tf(config, 0); 
-#ifdef NDEBUG
-    pcl::visualization::CloudViewer viewer("Cluster viewer");
     pcl::PointCloud<pcl::PointXYZI>::Ptr showPc(new pcl::PointCloud<pcl::PointXYZI>);
+    velodyne_pointcloud::Transform tf(config, 0); 
+#if  PCL_SHOW>0
+    pcl::visualization::CloudViewer viewer("pcd viewer");
+#endif //   PCL_SHOW>0
     for (int i = 0; i < pipe.queueLength_; i++)
     {
-        //continue;
         if (pullData(&pipe) < 0)continue;
         tf.processScan(tempData);
-
-        std::cout << tf.container_ptr->idx << std::endl;
-        //tf.processScan(pipe.queue[i]);
+        //tf.processScan(pipe.queue[0]);
+        LOG(INFO) << tf.container_ptr->idx;
+        if (i == pipe.queueLength_ - 1)
+        {
+            i = -1;
+        }
+#if  PCL_SHOW>0
         pcl::copyPointCloud(*tf.container_ptr->cloud.xyzi, *showPc);
         showPc->height = 1;
         showPc->width = tf.container_ptr->idx;
         showPc->points.resize(tf.container_ptr->idx);
         viewer.showCloud(showPc);
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        if (i == pipe.queueLength_-1)
-        {
-            i = -1;
-        }
-    }
-#else
-    //pcl::visualization::CloudViewer viewer("pcd viewer");    
-    for (int i = 0; i < pipe.queueLength_; i++)
-    {
-        if (pullData(&pipe) < 0)continue;
-        tf.processScan(tempData);
-        tf.processScan(pipe.queue[i]);
-        std::cout << tf.container_ptr->idx << std::endl;
+        //std::this_thread::sleep_for(std::chrono::milliseconds(20));
+#endif //   PCL_SHOW>0
         if (i == pipe.queueLength_ - 1)
         {
             i = -1;
         }
-        //viewer.showCloud(tf.container_ptr->cloud.xyzi);
     }
 
 
-#endif
     for (;;)
     {
         {

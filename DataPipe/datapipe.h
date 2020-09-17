@@ -3,27 +3,33 @@
 #include<iostream>
 #include<string>
 #include<vector>
-
+#include<mutex>
+#include "../logger/logger.h"
 
 template<class DataStruct>
 class DataPipe
 {
+private:
+	std::mutex pushPopLck;
+	std::vector<uint8_t> emptyFlag;
+	int pushPos;
+	int popPos;
 public:
 	int queueLength_;
-	int totalSize;
-	int cuurentPosFlag; 
 public:
 	DataPipe()
 	{
-		cuurentPosFlag = 0;
-		totalSize = -1;
+		pushPos = 0;
+		popPos = 0;  
 	};
 	DataPipe(const int&queueLength) 
 	{
-		cuurentPosFlag = 0;
-		totalSize = -1;
+		CHECK(queueLength > 0);
+		pushPos = 0;
+		popPos = 0;
 		queueLength_ = queueLength;
 		queue=std::vector<DataStruct>(queueLength, DataStruct()); 
+		emptyFlag = std::vector<uint8_t>(queueLength_, 0);
 	};
 	~DataPipe() {}
 	template<class Source>
@@ -32,51 +38,61 @@ public:
 	int getData(Source& src) { return 0; }
 	int pushData(const DataStruct&data)
 	{
-		data.copyTo(queue[cuurentPosFlag]);
-		if (totalSize<0)
+		std::lock_guard<std::mutex> lck(this->pushPopLck);
+		if (emptyFlag[pushPos]==0)
 		{
-			totalSize = 2;
+			data.copyTo(queue[pushPos]);
+			emptyFlag[pushPos] = 1;
+			pushPos++;
+			pushPos %= queueLength_;
+			return 0;
 		}
 		else
 		{
-			totalSize++;
-		}		
-		cuurentPosFlag++;
-		cuurentPosFlag %= queue.size();
+			return -1;
+		}
 	}
-	DataStruct& pushData2()
+	template<class Fun,class Arg>
+	int pushData(const Fun&f, Arg& param)
 	{
-		if (totalSize < 0)
+		std::lock_guard<std::mutex> lck(this->pushPopLck);
+		if (emptyFlag[pushPos] == 0)
 		{
-			totalSize = 2;
+			DataStruct* mem = &queue[pushPos];
+			int ret = f(param, mem);
+			if (ret == 0)
+			{
+				emptyFlag[pushPos] = 1;
+				pushPos++;
+				pushPos %= queueLength_;
+				return 0;
+			}
+			else return -2;
 		}
 		else
 		{
-			totalSize++;
+			return -1;
 		}
-		cuurentPosFlag++;
-		cuurentPosFlag %= queue.size(); 
-		return queue[cuurentPosFlag];
-	}
+	}	
 	template<class Source>
 	int setQueueAttr( Source&anotherParam)
 	{
 		return 0;
 	}
-	DataStruct& pop()
+	int pop(DataStruct*mem)
 	{
-		if (totalSize >0)
+		std::lock_guard<std::mutex> lck(this->pushPopLck);
+		if (emptyFlag[popPos] > 0&& mem!=NULL)
 		{
-			if (cuurentPosFlag == 0)cuurentPosFlag = queue.size() - 1;
-			else cuurentPosFlag--;
-			totalSize--;
+			queue[popPos].copyTo(*mem);
+			emptyFlag[popPos] = 0;
+			popPos++; 
+			popPos %= queueLength_;
 		}
-		else 
+		else
 		{
-			cuurentPosFlag = 0;
-			totalSize = -1;
+			return -1;
 		}
-		return queue[0];
 	}
 	//template<class Source, class Outtype>
 	//int pullData(const Source& src, Outtype&out) { return 0; }
@@ -86,10 +102,12 @@ public:
 private:
 	int setQueueLength(const int& queueLength)
 	{
-		cuurentPosFlag = 0;
-		totalSize = -1;
+		CHECK(queueLength > 0);
+		pushPos = 0;
+		popPos = 0;
 		queueLength_ = queueLength;
-		queue = std::vector<DataStruct>(queueLength, DataStruct()); 
+		queue = std::vector<DataStruct>(queueLength, DataStruct());
+		emptyFlag = std::vector<uint8_t>(queueLength_, 0);
 		return 0;
 	}
 	

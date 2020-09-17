@@ -6,12 +6,7 @@
 #include <vector>
 #include<time.h>
 
-#define ROS_WARN(x) printf(x)
-#define ROS_ERROR(x) printf(x)
-#define ROS_INFO_STREAM(x) std::cout<<x<<std::endl;
-#define ROS_ERROR_STREAM(x) std::cout<<x<<std::endl;
-#define ROS_DEBUG_STREAM(x) std::cout<<x<<std::endl;
-#define ROS_WARN_STREAM_THROTTLE(x,y)
+
 #define PIx2 (6.28318530717958647692528676656)
 #define PI (3.1415926535897932384626433832795)
 
@@ -37,7 +32,10 @@ struct LidarPackets
         other.packetNumInside_ = packetNumInside_;
         other.headerStamp = headerStamp;
         other.data.resize(data.size());
-        memcpy(&(other.data)[0], &data[0], data.size());
+        for (int i = 0; i < data.size(); i++)
+        {
+            memcpy(&(other.data[i].data[0]), &(data[i].data[0]), data[i].data.size());
+        }
         return 0;
     }
 };

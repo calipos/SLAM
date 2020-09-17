@@ -37,7 +37,7 @@ OrganizedCloudXYZIRT::OrganizedCloudXYZIRT(
 
   void OrganizedCloudXYZIRT::setup(const velodyne_msgs::VelodyneScan::ConstPtr& scan_msg){
     DataContainerBase::setup(scan_msg);
-    std::cout<<"new frame"<<std::endl;
+    //std::cout<<"new frame"<<std::endl;
     //iter_x = sensor_msgs::PointCloud2Iterator<float>(cloud, "x");
     //iter_y = sensor_msgs::PointCloud2Iterator<float>(cloud, "y");
     //iter_z = sensor_msgs::PointCloud2Iterator<float>(cloud, "z");

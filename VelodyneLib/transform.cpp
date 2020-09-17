@@ -1,6 +1,5 @@
-
+#include "../logger/logger.h"
 #include "transform.h"
-
 #include "pointcloudXYZIRT.h"
 #include "organized_cloudXYZIRT.h"
 
@@ -14,22 +13,22 @@ namespace velodyne_pointcloud
         int calibrationRet = data_->setup();
         if (calibrationRet==0)
         {
-            ROS_DEBUG_STREAM("Calibration file loaded.");             
+            DLOG(INFO) << "Calibration file loaded.";
             config_.num_lasers = static_cast<uint16_t>(data_->calibration_.num_lasers);
         }
         else
         {
             config_.num_lasers = 16;
-            ROS_ERROR_STREAM("Could not load calibration file!");
+            LOG(ERROR) << "Could not load calibration file!";
         }
         {
-            ROS_INFO_STREAM("Reconfigure request.");
+            LOG(INFO)<<"Reconfigure request.";
             data_->setParameters(config.min_range, config.max_range,
                 config.view_direction, config.view_width);
             config_.target_frame = config.target_frame;
             config_.fixed_frame = config.fixed_frame;
-            ROS_INFO_STREAM("Target frame ID now: " << config_.target_frame);
-            ROS_INFO_STREAM("Fixed frame ID now: " << config_.fixed_frame);
+            LOG(INFO) << "Target frame ID now: " << config_.target_frame;
+            LOG(INFO) << "Fixed frame ID now: " << config_.fixed_frame;
             config_.min_range = config.min_range;
             config_.max_range = config.max_range;
             if ( config.organize_cloud != config_.organize_cloud) 
@@ -37,7 +36,7 @@ namespace velodyne_pointcloud
                 config_.organize_cloud = config.organize_cloud;
                 if (config_.organize_cloud)
                 {
-                    ROS_INFO_STREAM("Using the organized cloud format...");
+                    LOG(INFO) << "Using the organized cloud format...";
                     container_ptr = std::shared_ptr<OrganizedCloudXYZIRT>(
                         new OrganizedCloudXYZIRT(config_.max_range, config_.min_range,
                             config_.target_frame, config_.fixed_frame,

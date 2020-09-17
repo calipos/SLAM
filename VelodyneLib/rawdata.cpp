@@ -29,6 +29,7 @@
 
 #include <fstream>
 #include <math.h>
+#include"../logger/logger.h"
   //#include <ros/ros.h>
   //#include <ros/package.h>
   //#include <angles/angles.h>
@@ -173,7 +174,7 @@ namespace velodyne_rawdata
         }
         else {
             timing_offsets.clear();
-            ROS_WARN("Timings not supported for model %s", config_.model.c_str());
+            LOG(WARNING)<<"Timings not supported for model %s"<< config_.model.c_str();
         }
 
         if (timing_offsets.size()) {
@@ -187,7 +188,7 @@ namespace velodyne_rawdata
             return true;
         }
         else {
-            ROS_WARN("NO TIMING OFFSETS CALCULATED. ARE YOU USING A SUPPORTED VELODYNE SENSOR?");
+            LOG(WARNING) << "NO TIMING OFFSETS CALCULATED. ARE YOU USING A SUPPORTED VELODYNE SENSOR?";
         }
         return false;
     }
@@ -198,15 +199,15 @@ namespace velodyne_rawdata
         config_.model = "VLP16";
         buildTimings();
         config_.calibrationFile = "D:/repo/velodyne/velodyne_pointcloud/params/VLP16db.yaml";
-        ROS_INFO_STREAM("correction angles: " << config_.calibrationFile);
+        LOG(INFO)<<"correction angles: " << config_.calibrationFile;
         calibration_.read(config_.calibrationFile);
         if (!calibration_.initialized) {
-            ROS_ERROR_STREAM("Unable to open calibration file: " <<
-                config_.calibrationFile);
+            LOG(ERROR) << "Unable to open calibration file: " <<
+                config_.calibrationFile;
             return -1;
         }
 
-        ROS_INFO_STREAM("Number of lasers: " << calibration_.num_lasers << ".");
+        LOG(INFO) << "Number of lasers: " << calibration_.num_lasers << ".";
 
         // Set up cached values for sin and cos of all the possible headings
         for (uint16_t rot_index = 0; rot_index < ROTATION_MAX_UNITS; ++rot_index) {
@@ -223,17 +224,17 @@ namespace velodyne_rawdata
 
         config_.max_range = max_range_;
         config_.min_range = min_range_;
-        ROS_INFO_STREAM("data ranges to publish: ["
+        LOG(INFO) << "data ranges to publish: ["
             << config_.min_range << ", "
-            << config_.max_range << "]");
+            << config_.max_range << "]";
 
         config_.calibrationFile = calibration_file;
 
-        ROS_INFO_STREAM("correction angles: " << config_.calibrationFile);
+        LOG(INFO) << "correction angles: " << config_.calibrationFile;
 
         calibration_.read(config_.calibrationFile);
         if (!calibration_.initialized) {
-            ROS_ERROR_STREAM("Unable to open calibration file: " << config_.calibrationFile);
+            LOG(ERROR) << "Unable to open calibration file: " << config_.calibrationFile;
             return -1;
         }
 
@@ -255,7 +256,7 @@ namespace velodyne_rawdata
     void RawData::unpack(const velodyne_msgs::VelodynePacket& pkt, DataContainerBase& data, const ros::Time& scan_start_time)
     {
         using velodyne_pointcloud::LaserCorrection;
-        ROS_DEBUG_STREAM("Received packet, time: " << *(double*)&pkt.data[0]);
+        DLOG(INFO) << "Received packet, time: " << *(double*)&pkt.data[0];
 
         /** special parsing for the VLP16 **/
         if (calibration_.num_lasers == 16)
@@ -447,9 +448,9 @@ namespace velodyne_rawdata
             if (UPPER_BANK != raw->blocks[block].header) {
                 // Do not flood the log with messages, only issue at most one
                 // of these warnings per minute.
-                ROS_WARN_STREAM_THROTTLE(60, "skipping invalid VLP-16 packet: block "
+                LOG(WARNING) <<  "skipping invalid VLP-16 packet: block "
                     << block << " header value is "
-                    << raw->blocks[block].header);
+                    << raw->blocks[block].header;
                 return;                         // bad packet: skip the rest
             }
 
@@ -461,7 +462,7 @@ namespace velodyne_rawdata
                 // some packets contain an angle overflow where azimuth_diff < 0 
                 if (raw_azimuth_diff < 0)//raw->blocks[block+1].rotation - raw->blocks[block].rotation < 0)
                 {
-                    ROS_WARN_STREAM_THROTTLE(60, "Packet containing angle overflow, first angle: " << raw->blocks[block].rotation << " second angle: " << raw->blocks[block + 1].rotation);
+                    DLOG(WARNING) << "Packet containing angle overflow, first angle: " << raw->blocks[block].rotation << " second angle: " << raw->blocks[block + 1].rotation;
                     // if last_azimuth_diff was not zero, we can assume that the velodyne's speed did not change very much and use the same difference
                     if (last_azimuth_diff > 0) {
                         azimuth_diff = last_azimuth_diff;

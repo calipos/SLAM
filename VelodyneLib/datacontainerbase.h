@@ -17,6 +17,7 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/search/search.h>
 #include <pcl/search/kdtree.h>
+#include "../logger/logger.h"
 #include "DataStruct.h"
 #ifdef NDEBUG
 #pragma comment(lib,"shlwapi.lib")
@@ -36,19 +37,19 @@
 #endif
 #ifdef _DEBUG
 #pragma comment(lib,"shlwapi.lib")
-#pragma comment(lib,"pcl_common.lib")
-#pragma comment(lib,"pcl_filters.lib")
-#pragma comment(lib,"pcl_features.lib")
-#pragma comment(lib,"pcl_sample_consensus.lib")
-#pragma comment(lib,"pcl_io.lib")
-#pragma comment(lib,"pcl_io_ply.lib")
-#pragma comment(lib,"pcl_kdtree.lib")
-#pragma comment(lib,"pcl_registration.lib")
-#pragma comment(lib,"pcl_search.lib")
-#pragma comment(lib,"pcl_segmentation.lib")
-#pragma comment(lib,"pcl_surface.lib")
-#pragma comment(lib,"pcl_surface.lib")
-#pragma comment(lib,"flann_cpp_s.lib")
+#pragma comment(lib,"pcl_commond.lib")
+#pragma comment(lib,"pcl_filtersd.lib")
+#pragma comment(lib,"pcl_featuresd.lib")
+#pragma comment(lib,"pcl_sample_consensusd.lib")
+#pragma comment(lib,"pcl_iod.lib")
+#pragma comment(lib,"pcl_io_plyd.lib")
+#pragma comment(lib,"pcl_kdtreed.lib")
+#pragma comment(lib,"pcl_registrationd.lib")
+#pragma comment(lib,"pcl_searchd.lib")
+#pragma comment(lib,"pcl_segmentationd.lib")
+#pragma comment(lib,"pcl_surfaced.lib")
+#pragma comment(lib,"pcl_visualizationd.lib")
+#pragma comment(lib,"flann_cpp_s-gd.lib")
 #endif
 namespace velodyne_rawdata
 {
@@ -132,11 +133,11 @@ namespace velodyne_rawdata
                 , is_dense(is_dense)
                 , scans_per_packet(scans_per_packet)
             {
-                ROS_INFO_STREAM("Initialized container with "
+                LOG(INFO) << "Initialized container with "
                     << "min_range: " << min_range << ", max_range: " << max_range
                     << ", target_frame: " << target_frame << ", fixed_frame: " << fixed_frame
                     << ", init_width: " << init_width << ", init_height: " << init_height
-                    << ", is_dense: " << is_dense << ", scans_per_packet: " << scans_per_packet);
+                    << ", is_dense: " << is_dense << ", scans_per_packet: " << scans_per_packet;
             }
         };
    
@@ -174,8 +175,8 @@ namespace velodyne_rawdata
                 cloud.header.frame_id = sensor_frame;
             }
 
-            ROS_DEBUG_STREAM("Prepared cloud width" << cloud.height * cloud.width
-                << " Velodyne points, time: " << cloud.header.stamp);
+            DLOG(INFO) << "Prepared cloud width" << cloud.height * cloud.width
+                << " Velodyne points, time: " << cloud.header.stamp;
             return cloud;
         }
 
